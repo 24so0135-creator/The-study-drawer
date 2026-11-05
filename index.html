@@ -335,7 +335,7 @@ let sample = { json: async (prompt) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 messages: [{ role: 'user', content: prompt }],
-                model: 'openai-large',
+                model: 'openai',
                 jsonMode: true
             })
         });
