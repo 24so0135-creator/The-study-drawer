@@ -325,29 +325,41 @@ function award(n){
   state.xp+=n;save();paintStats();toast("+"+n+" XP");
 }
 const ini=$("#initials");ini.value=state.initials||"AM";
-ini.addEventListener("input",()=>{state.initials=ini.value.toUpperCase();save()});
+ini.addEventListener("input",()=>{state.initials=ini.value.toUpperCase();
+ 
+/* -------- Free AI Configuration -------- */
+let sample = { json: async (prompt) => {
+    try {
+        const response = await fetch('https://pollinations.ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                messages: [{ role: 'user', content: prompt }],
+                model: 'openai-large',
+                jsonMode: true
+            })
+        });
+        const text = await response.text();
+        const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(cleanText);
+    } catch (e) {
+        console.error("AI Generation failed", e);
+        throw e;
+    }
+}};
+let limits = { images: { maxCount: 5 } };
+const ERR = { not_granted: "Access error" };
+const errText = e => "Something went wrong. Try again.";
+const noAI = false;
+const noImg = false;
 
-/* ---------- Claude ---------- */
-let sample=null,limits=null;
-const ERR={not_granted:"Claude access was not allowed for this page. Reload and allow it to continue.",sampling_disabled:"Claude is not available for this account.",rate_limited:"Too many requests just now. Wait a minute and try again.",session_expired:"Your session expired. Sign in again and retry.",image_rejected:"One of the photos could not be read. Try a sharper, smaller photo.",refused:"This content could not be processed. Try different material.",empty_completion:"No answer came back. Try again with a little more text.",invalid_json:"The answer arrived in an unexpected shape. Press try again.",prompt_too_large:"That is too much text at once. Split the chapter into parts.",upstream_error:"The connection dropped. Try again.",images_unavailable:"Photo scanning is not available here. Type or paste the text instead."};
-const errText=e=>ERR[e&&e.code]||"Something went wrong. Try again.";
-function paintAvail(){
-  const noAI=!sample;
-  const noImg=!limits||!limits.images;
-  $("#stamp").disabled=noAI;
-  $("#photo-note").textContent=noImg?(sample?"Photo scanning is not available in this view. Type or paste the text instead.":""):"Up to "+limits.images.maxCount+" photos per deck.";
-  $("#b-cam").disabled=$("#b-file").disabled=noImg;
-  $("#c-send").disabled=noAI;
-  if(noAI){showErr($("#stamp-err"),"Claude is not connected in this view, so decks cannot be generated here.")}
+function paintAvail() {
+    $("#stamp").disabled = false;
+    $("#c-send").disabled = false;
+    $("#stamp-err").hidden = true;
 }
-(async()=>{
-  try{sample=window.claude&&await window.claude.use("sample")}catch(e){sample=null}
-  if(sample){try{limits=await sample.limits()}catch(e){limits=null}}
-  paintAvail();
-})();
-function showErr(el,t){el.textContent=t;el.hidden=!t}
-const ask=(prompt,opts)=>sample.json(prompt,Object.assign({cache:false,modelTier:"default"},opts));
 
+setTimeout(() => { paintAvail(); }, 100);                                 
 /* ---------- views ---------- */
 const views={drawer:$("#view-drawer"),coach:$("#view-coach")};
 function setView(v){
